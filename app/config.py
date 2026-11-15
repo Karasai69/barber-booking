@@ -16,6 +16,10 @@ class Settings(BaseSettings):
 
     # Нужен только боту. API и тесты работают и без него.
     TELEGRAM_BOT_TOKEN: SecretStr | None = None
+    # Кому бот присылает ежедневный отчёт. Свой id можно узнать командой /myid в боте.
+    ADMIN_TELEGRAM_ID: int | None = None
+
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     @property
     def database_url(self) -> str:
