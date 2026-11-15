@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    runs-on: ubuntu-latest
+    # Тестам нужен настоящий PostgreSQL: EXCLUDE и tstzrange в SQLite нет.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: barber
+          POSTGRES_PASSWORD: barber
+          POSTGRES_DB: barber_booking
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U barber"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      POSTGRES_USER: barber
+      POSTGRES_PASSWORD: barber
+      POSTGRES_DB: barber_booking
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Migrations are in sync with models
+        run: |
+          alembic upgrade head
+          alembic check
+      - run: pytest -v
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t barber-booking .
+      - name: Image starts and imports the app
+        run: >-
+          docker run --rm
+          -e POSTGRES_USER=x -e POSTGRES_PASSWORD=x -e POSTGRES_DB=x -e JWT_SECRET=x
+          barber-booking python -c "import app.main, bot.handlers, app.tasks; print('ok')"
