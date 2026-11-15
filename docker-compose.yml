@@ -1,3 +1,25 @@
+# Только база и Redis (для разработки на Windows):  docker compose up -d db redis
+# Весь проект:                                       docker compose up -d --build
+
+# Общие настройки для всех сервисов на нашем образе.
+x-app: &app
+  build: .
+  image: barber-booking
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    # Внутри Docker база и Redis доступны по имени сервиса, а не через localhost.
+    POSTGRES_HOST: db
+    POSTGRES_PORT: 5432
+    REDIS_URL: redis://redis:6379/0
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+
 services:
   db:
     image: postgres:17
@@ -26,6 +48,39 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  # Применяет миграции и завершается. Остальные сервисы ждут его успешного окончания.
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  bot:
+    <<: *app
+    command: ["python", "-m", "bot"]
+
+  worker:
+    <<: *app
+    command: ["celery", "-A", "app.celery_app", "worker", "-l", "info", "--concurrency", "2"]
+
+  beat:
+    <<: *app
+    # Файл расписания — во временную папку контейнера.
+    command: ["celery", "-A", "app.celery_app", "beat", "-l", "info", "-s", "/tmp/celerybeat-schedule"]
 
 volumes:
   pgdata:
