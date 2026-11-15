@@ -11,6 +11,7 @@ from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.booking import shop_tz
+from app.formatting import money
 from bot.queries import AppointmentView, BarberView, ServiceView
 
 WEEKDAYS = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
@@ -82,7 +83,7 @@ def services_kb(services: list[ServiceView]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for s in services:
         kb.button(
-            text=f"{s.name} — {s.price:.0f} ₸, {s.duration_min} мин",
+            text=f"{s.name} — {money(s.price)}, {s.duration_min} мин",
             callback_data=ServiceCb(service_id=s.id),
         )
     kb.button(text="« В меню", callback_data=MenuCb(action="home"))

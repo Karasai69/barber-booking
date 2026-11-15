@@ -22,6 +22,7 @@ from app.booking import now_local, shop_tz
 from app.config import settings
 from app.database import DbSession
 from app.errors import AppError, commit_or_conflict, get_or_404
+from app.formatting import money
 from app.models import AppointmentStatus, Barber, Schedule, Service, User, UserRole
 from app.routers.appointments import own_barber_id
 from app.schemas import BarberCreate, ScheduleCreate, ServiceCreate, ServiceUpdate
@@ -41,11 +42,7 @@ STATUS_LABELS = {
 }
 
 
-def _money(value: Decimal | int) -> str:
-    return f"{value:,.0f}".replace(",", " ") + " ₸"
-
-
-templates.env.filters["money"] = _money
+templates.env.filters["money"] = money
 templates.env.filters["hm"] = lambda dt: dt.astimezone(shop_tz()).strftime("%H:%M")
 templates.env.globals.update(
     WEEKDAYS=WEEKDAYS, STATUS_LABELS=STATUS_LABELS, Status=AppointmentStatus

@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.booking import day_bounds
+from app.formatting import money
 from app.models import Appointment, AppointmentStatus, Barber
 
 WEEKDAYS = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
@@ -56,15 +57,11 @@ def build_daily_report(db: Session, day: date) -> DailyReport:
         .order_by(Barber.name)
     )
     by_barber: dict[int, BarberStats] = {}
-    for barber_id, name, status, count, money in rows:
+    for barber_id, name, status, count, amount in rows:
         stats = by_barber.setdefault(barber_id, BarberStats(name))
         stats.statuses[status] = count
-        stats.revenue += money or Decimal("0")
+        stats.revenue += amount or Decimal("0")
     return DailyReport(day, list(by_barber.values()))
-
-
-def _money(value: Decimal) -> str:
-    return f"{value:,.0f}".replace(",", " ") + " ₸"
 
 
 def format_report(report: DailyReport) -> str:
@@ -82,7 +79,7 @@ def format_report(report: DailyReport) -> str:
     ]
     if s[AppointmentStatus.BOOKED]:
         lines.append(f"❔ без отметки: {s[AppointmentStatus.BOOKED]}")
-    lines += ["", f"💰 Выручка: <b>{_money(report.revenue)}</b>", ""]
+    lines += ["", f"💰 Выручка: <b>{money(report.revenue)}</b>", ""]
     for b in report.barbers:
-        lines.append(f"{escape(b.name)}: {b.total} зап., {_money(b.revenue)}")
+        lines.append(f"{escape(b.name)}: {b.total} зап., {money(b.revenue)}")
     return "\n".join(lines)

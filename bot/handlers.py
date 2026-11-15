@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from app.booking import now_local
 from app.errors import AppError
+from app.formatting import money
 from app.reminders import REMIND_BEFORE
 from bot import keyboards as kbs
 from bot import queries as q
@@ -133,7 +134,7 @@ async def on_slot(callback: CallbackQuery, callback_data: SlotCb) -> None:
         f"Мастер: {escape(barber.name)}\n"
         f"Когда: {kbs.format_dt(kbs.from_ts(callback_data.ts))}\n"
         f"Длительность: {service.duration_min} мин\n"
-        f"Цена: {service.price:.0f} ₸"
+        f"Цена: {money(service.price)}"
     )
     await show(
         callback,
