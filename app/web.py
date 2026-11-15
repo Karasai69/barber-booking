@@ -28,12 +28,29 @@ from app.routers.appointments import own_barber_id
 from app.schemas import BarberCreate, ScheduleCreate, ServiceCreate, ServiceUpdate
 from app.security import create_access_token
 from app.stats import day_appointments, period_stats, summarize
+from app.timeline import build_timeline, summarize_day
 
 router = APIRouter(prefix="/web", include_in_schema=False)
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 COOKIE_NAME = "access_token"
 WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+WEEKDAYS_FULL = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
+MONTHS_GENITIVE = [
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+]
+ALL_BARBERS = "all"  # значение barber_id в адресе для вида «Все мастера»
 STATUS_LABELS = {
     AppointmentStatus.BOOKED: "Записан",
     AppointmentStatus.CANCELLED: "Отменил",
@@ -45,7 +62,11 @@ STATUS_LABELS = {
 templates.env.filters["money"] = money
 templates.env.filters["hm"] = lambda dt: dt.astimezone(shop_tz()).strftime("%H:%M")
 templates.env.globals.update(
-    WEEKDAYS=WEEKDAYS, STATUS_LABELS=STATUS_LABELS, Status=AppointmentStatus
+    WEEKDAYS=WEEKDAYS,
+    WEEKDAYS_FULL=WEEKDAYS_FULL,
+    MONTHS_GENITIVE=MONTHS_GENITIVE,
+    STATUS_LABELS=STATUS_LABELS,
+    Status=AppointmentStatus,
 )
 
 Text = Annotated[str, Form()]
@@ -146,30 +167,67 @@ def logout():
 # --- Расписание (мастер и админ) ---
 
 
+def _selected_barber(raw: str | None, barbers: list[Barber]) -> int | None:
+    """Какого мастера показывает админ. None — вид «Все мастера».
+
+    Без параметра открываем первого работающего мастера: у одного мастера расписание
+    рисуется шкалой времени, а общий список остаётся отдельным видом.
+    """
+    if raw is None:
+        active = [b for b in barbers if b.is_active] or barbers
+        return active[0].id if active else None
+    if raw.isdigit() and int(raw) in {b.id for b in barbers}:
+        return int(raw)
+    return None
+
+
 @router.get("/schedule", response_class=HTMLResponse)
 def schedule(
     request: Request,
     db: DbSession,
     user: WebUser,
     day: date | None = None,
-    barber_id: int | None = None,
+    barber_id: str | None = None,
 ):
-    day = day or now_local().date()
+    now = now_local()
+    day = day or now.date()
     own = own_barber_id(user)
     if own is not None:
-        barber_id = own
-    barbers = db.scalars(select(Barber).order_by(Barber.name)).all() if own is None else []
+        barbers = []
+        selected = own
+        barber_name = db.get(Barber, own).name
+        barber_param = ""
+    else:
+        barbers = list(db.scalars(select(Barber).order_by(Barber.name)))
+        selected = _selected_barber(barber_id, barbers)
+        barber_name = next((b.name for b in barbers if b.id == selected), None)
+        barber_param = str(selected) if selected is not None else ALL_BARBERS
+
+    rows = day_appointments(db, day, selected)
+    timeline = None
+    if selected is not None:
+        shifts = db.execute(
+            select(Schedule.start_time, Schedule.end_time).where(
+                Schedule.barber_id == selected, Schedule.weekday == day.weekday()
+            )
+        ).all()
+        timeline = build_timeline(rows, [tuple(shift) for shift in shifts], day, now)
     return render(
         request,
         "schedule.html",
         user,
         day=day,
-        today=now_local().date(),
+        today=now.date(),
         prev_day=day - timedelta(days=1),
         next_day=day + timedelta(days=1),
-        rows=day_appointments(db, day, barber_id),
+        rows=rows,
         barbers=barbers,
-        barber_id=barber_id,
+        barber_id=selected,
+        barber_name=barber_name,
+        barber_param=barber_param,
+        single_barber=selected is not None,
+        timeline=timeline,
+        summary=summarize_day(timeline.blocks) if timeline else None,
     )
 
 
