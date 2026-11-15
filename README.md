@@ -29,6 +29,18 @@
   </tr>
 </table>
 
+**Клиент: запись через Telegram-бота**
+
+<table>
+  <tr>
+    <td width="50%" valign="top" rowspan="2"><b>Свободное время мастера</b><br><br><img src="docs/screenshots/bot-slots.png" alt="Выбор времени в боте"></td>
+    <td valign="top"><b>Подтверждение</b><br><br><img src="docs/screenshots/bot-confirm.png" alt="Подтверждение записи"></td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Мои записи и отмена</b><br><br><img src="docs/screenshots/bot-my.png" alt="Список записей клиента"></td>
+  </tr>
+</table>
+
 <sub>Данные на скриншотах — сгенерированные демо-данные.</sub>
 
 ## Стек
