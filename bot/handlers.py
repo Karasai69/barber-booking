@@ -3,10 +3,12 @@ from html import escape
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
+from app.booking import now_local
 from app.errors import AppError
+from app.reminders import REMIND_BEFORE
 from bot import keyboards as kbs
 from bot import queries as q
 from bot.keyboards import BarberCb, CancelCb, ConfirmCb, DayCb, MenuCb, ServiceCb, SlotCb
@@ -49,6 +51,12 @@ async def cmd_start(message: Message) -> None:
         f"Привет, {name}! Я помогу записаться в барбершоп.\n\n{MENU_TEXT}",
         reply_markup=kbs.main_menu(),
     )
+
+
+@router.message(Command("myid"))
+async def cmd_myid(message: Message) -> None:
+    """Показывает Telegram id — нужен для ADMIN_TELEGRAM_ID и id мастера."""
+    await message.answer(f"Ваш Telegram id: <code>{message.from_user.id}</code>")
 
 
 @router.callback_query(MenuCb.filter(F.action == "home"))
@@ -159,12 +167,10 @@ async def on_confirm(callback: CallbackQuery, callback_data: ConfirmCb) -> None:
         # Например, время только что занял другой клиент — показываем свежие слоты.
         await on_day(callback, day, alert=exc.message)
         return
-    await show(
-        callback,
-        f"✅ Вы записаны на {kbs.format_dt(start_at)}.\n"
-        "Напомню за 2 часа до визита.",
-        kbs.main_menu(),
-    )
+    text = f"✅ Вы записаны на {kbs.format_dt(start_at)}."
+    if start_at - now_local() > REMIND_BEFORE:
+        text += "\nНапомню за 2 часа до визита."
+    await show(callback, text, kbs.main_menu())
 
 
 @router.callback_query(MenuCb.filter(F.action == "my"))
