@@ -15,7 +15,9 @@ SERVICE_NOT_FOUND = "Услуга не найдена"
 NAME_TAKEN = "Услуга с таким названием уже есть"
 
 
-@router.post("", response_model=ServiceRead, status_code=status.HTTP_201_CREATED, dependencies=ADMIN)
+@router.post(
+    "", response_model=ServiceRead, status_code=status.HTTP_201_CREATED, dependencies=ADMIN
+)
 def create_service(data: ServiceCreate, db: DbSession):
     service = Service(**data.model_dump())
     db.add(service)

@@ -44,6 +44,7 @@ def barber_headers(shop):
 
 # --- Вход ---
 
+
 def test_login_returns_working_token(anon_client, admin_headers):
     response = anon_client.post(
         "/auth/token", data={"username": "admin", "password": ADMIN_PASSWORD}
@@ -92,6 +93,7 @@ def test_disabled_user_loses_access(client, anon_client, shop, barber_headers):
 
 # --- Права ---
 
+
 def test_anonymous_can_read_but_not_write(anon_client):
     assert anon_client.get("/services").status_code == 200
     assert anon_client.post("/services", json={}).status_code == 401
@@ -114,7 +116,9 @@ def test_barber_cannot_use_admin_endpoints(anon_client, barber_headers, method, 
     assert response.status_code == 403
 
 
-def test_barber_sees_only_own_appointments(client, anon_client, db, shop, other_barber, barber_headers):
+def test_barber_sees_only_own_appointments(
+    client, anon_client, db, shop, other_barber, barber_headers
+):
     own = book(client, shop, at(shop["day"], 12)).json()["id"]
     foreign = add_appointment(db, shop, at(shop["day"], 12), barber_id=other_barber)
 
@@ -157,6 +161,7 @@ def test_barber_cannot_mark_foreign_visit(anon_client, db, shop, other_barber, b
 
 
 # --- Пользователи ---
+
 
 def test_admin_creates_barber_account(client, anon_client, shop):
     response = client.post(
@@ -215,6 +220,7 @@ def test_password_is_stored_hashed(admin_headers, db):
 
 
 # --- Статистика ---
+
 
 def test_stats_load_and_revenue(client, db, shop):
     day = shop["day"]  # смена 10:00–18:00 = 480 минут

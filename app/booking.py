@@ -162,9 +162,7 @@ def change_status(
     if barber_id is not None and new_status not in VISIT_STATUSES:
         raise ForbiddenError("Мастер может только отметить, пришёл ли клиент")
     if new_status not in ALLOWED_TRANSITIONS.get(appointment.status, set()):
-        raise AppError(
-            f"Нельзя сменить статус {appointment.status.value} на {new_status.value}"
-        )
+        raise AppError(f"Нельзя сменить статус {appointment.status.value} на {new_status.value}")
     if new_status in VISIT_STATUSES and appointment.start_at > now_local():
         raise AppError("Отметить визит можно только после начала записи")
     appointment.status = new_status

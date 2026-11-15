@@ -63,8 +63,6 @@ def claim_due_reminders(db: Session, now: datetime | None = None) -> list[Remind
 def release_reminder(db: Session, appointment_id: int) -> None:
     """Снимает отметку, чтобы следующий запуск попробовал отправить ещё раз."""
     db.execute(
-        update(Appointment)
-        .where(Appointment.id == appointment_id)
-        .values(reminder_sent_at=None)
+        update(Appointment).where(Appointment.id == appointment_id).values(reminder_sent_at=None)
     )
     db.commit()

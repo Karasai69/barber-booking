@@ -18,6 +18,7 @@ class ORMModel(BaseModel):
 
 # --- Мастера ---
 
+
 class BarberCreate(BaseModel):
     name: Name
     telegram_id: TelegramId | None = None
@@ -37,6 +38,7 @@ class BarberRead(ORMModel):
 
 
 # --- Услуги ---
+
 
 class ServiceCreate(BaseModel):
     name: Name
@@ -58,6 +60,7 @@ class ServiceRead(ORMModel):
 
 
 # --- График ---
+
 
 class ScheduleCreate(BaseModel):
     weekday: Annotated[int, Field(ge=0, le=6, description="0 = понедельник")]
@@ -81,6 +84,7 @@ class ScheduleRead(ORMModel):
 
 # --- Клиенты ---
 
+
 class ClientCreate(BaseModel):
     name: Name
     phone: Annotated[str, Field(min_length=5, max_length=20)] | None = None
@@ -95,6 +99,7 @@ class ClientRead(ORMModel):
 
 
 # --- Записи ---
+
 
 class AppointmentCreate(BaseModel):
     barber_id: int
@@ -120,6 +125,7 @@ class AppointmentRead(ORMModel):
 
 
 # --- Вход и пользователи кабинета ---
+
 
 class Token(BaseModel):
     access_token: str
@@ -147,6 +153,7 @@ class UserRead(ORMModel):
 
 
 # --- Статистика ---
+
 
 class BarberStatsRead(ORMModel):
     barber_id: int | None

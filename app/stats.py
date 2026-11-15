@@ -17,6 +17,7 @@ MAX_PERIOD_DAYS = 93
 
 # --- Расписание на день ---
 
+
 @dataclass(frozen=True)
 class DayAppointment:
     id: int
@@ -62,6 +63,7 @@ def day_appointments(db: Session, day: date, barber_id: int | None = None) -> li
 
 
 # --- Загрузка и выручка за период ---
+
 
 @dataclass
 class BarberStats:
@@ -137,9 +139,9 @@ def period_stats(db: Session, date_from: date, date_to: date) -> list[BarberStat
 
     weekday_count = Counter((date_from + timedelta(days=i)).weekday() for i in range(days))
     for schedule in db.scalars(select(Schedule)):
-        stats[schedule.barber_id].work_minutes += _shift_minutes(schedule) * weekday_count[
-            schedule.weekday
-        ]
+        stats[schedule.barber_id].work_minutes += (
+            _shift_minutes(schedule) * weekday_count[schedule.weekday]
+        )
 
     # Уволенных мастеров показываем, только если у них были записи за период.
     return [s for s in stats.values() if s.barber_id in active or s.total]
@@ -149,8 +151,14 @@ def summarize(rows: list[BarberStats]) -> BarberStats:
     total = BarberStats(None, "Всего")
     for r in rows:
         for name in (
-            "total", "completed", "no_show", "cancelled", "pending",
-            "revenue", "busy_minutes", "work_minutes",
+            "total",
+            "completed",
+            "no_show",
+            "cancelled",
+            "pending",
+            "revenue",
+            "busy_minutes",
+            "work_minutes",
         ):
             setattr(total, name, getattr(total, name) + getattr(r, name))
     return total

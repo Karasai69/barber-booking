@@ -9,17 +9,17 @@ from pathlib import Path  # noqa: E402
 from zoneinfo import ZoneInfo  # noqa: E402
 
 import pytest  # noqa: E402
-from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine, text  # noqa: E402
 
+from alembic import command  # noqa: E402
 from app import accounts  # noqa: E402
 from app.config import settings  # noqa: E402
-from app.models import UserRole  # noqa: E402
-from app.security import create_access_token  # noqa: E402
 from app.database import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import UserRole  # noqa: E402
+from app.security import create_access_token  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 TZ = ZoneInfo(settings.TIMEZONE)

@@ -47,7 +47,9 @@ def _money(value: Decimal | int) -> str:
 
 templates.env.filters["money"] = _money
 templates.env.filters["hm"] = lambda dt: dt.astimezone(shop_tz()).strftime("%H:%M")
-templates.env.globals.update(WEEKDAYS=WEEKDAYS, STATUS_LABELS=STATUS_LABELS, Status=AppointmentStatus)
+templates.env.globals.update(
+    WEEKDAYS=WEEKDAYS, STATUS_LABELS=STATUS_LABELS, Status=AppointmentStatus
+)
 
 Text = Annotated[str, Form()]
 OptionalText = Annotated[str, Form()]
@@ -55,9 +57,12 @@ OptionalText = Annotated[str, Form()]
 
 # --- Вспомогательное ---
 
+
 def redirect(url: str, **params: object) -> RedirectResponse:
     query = urlencode({k: v for k, v in params.items() if v is not None})
-    return RedirectResponse(f"{url}?{query}" if query else url, status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(
+        f"{url}?{query}" if query else url, status_code=status.HTTP_303_SEE_OTHER
+    )
 
 
 def render(request: Request, name: str, user: User | None, status_code: int = 200, **ctx):
@@ -97,6 +102,7 @@ WebAdmin = Annotated[User, Depends(web_admin)]
 
 # --- Вход ---
 
+
 @router.get("")
 def home(user: WebUser):
     return redirect("/web/admin" if user.role == UserRole.ADMIN else "/web/schedule")
@@ -114,8 +120,12 @@ def login(request: Request, db: DbSession, username: Text, password: Text):
     user = accounts.authenticate(db, username, password)
     if user is None:
         return render(
-            request, "login.html", None, status_code=401,
-            error="Неверный логин или пароль", username=username,
+            request,
+            "login.html",
+            None,
+            status_code=401,
+            error="Неверный логин или пароль",
+            username=username,
         )
     response = redirect("/web")
     response.set_cookie(
@@ -138,6 +148,7 @@ def logout():
 
 # --- Расписание (мастер и админ) ---
 
+
 @router.get("/schedule", response_class=HTMLResponse)
 def schedule(
     request: Request,
@@ -152,7 +163,9 @@ def schedule(
         barber_id = own
     barbers = db.scalars(select(Barber).order_by(Barber.name)).all() if own is None else []
     return render(
-        request, "schedule.html", user,
+        request,
+        "schedule.html",
+        user,
         day=day,
         today=now_local().date(),
         prev_day=day - timedelta(days=1),
@@ -182,6 +195,7 @@ def set_status(
 
 # --- Админ: статистика ---
 
+
 @router.get("/admin", response_class=HTMLResponse)
 def admin_stats(
     request: Request,
@@ -198,14 +212,19 @@ def admin_stats(
     except AppError as exc:
         rows, error = [], exc.message
     return render(
-        request, "admin_stats.html", user,
-        date_from=date_from, date_to=date_to,
-        rows=rows, total=summarize(rows),
+        request,
+        "admin_stats.html",
+        user,
+        date_from=date_from,
+        date_to=date_to,
+        rows=rows,
+        total=summarize(rows),
         **({"error": error} if error else {}),
     )
 
 
 # --- Админ: мастера ---
+
 
 @router.get("/admin/barbers", response_class=HTMLResponse)
 def admin_barbers(request: Request, db: DbSession, user: WebAdmin):
@@ -213,9 +232,7 @@ def admin_barbers(request: Request, db: DbSession, user: WebAdmin):
     accounts_by_barber = {
         u.barber_id: u for u in db.scalars(select(User).where(User.barber_id.is_not(None)))
     }
-    return render(
-        request, "admin_barbers.html", user, barbers=barbers, accounts=accounts_by_barber
-    )
+    return render(request, "admin_barbers.html", user, barbers=barbers, accounts=accounts_by_barber)
 
 
 @router.post("/admin/barbers")
@@ -252,15 +269,23 @@ def admin_barber(barber_id: int, request: Request, db: DbSession, user: WebAdmin
     ).all()
     account = db.scalar(select(User).where(User.barber_id == barber_id))
     return render(
-        request, "admin_barber.html", user,
-        barber=barber, schedules=schedules, account=account,
+        request,
+        "admin_barber.html",
+        user,
+        barber=barber,
+        schedules=schedules,
+        account=account,
     )
 
 
 @router.post("/admin/barbers/{barber_id}/schedules")
 def admin_add_schedule(
-    barber_id: int, db: DbSession, user: WebAdmin,
-    weekday: Text, start_time: Text, end_time: Text,
+    barber_id: int,
+    db: DbSession,
+    user: WebAdmin,
+    weekday: Text,
+    start_time: Text,
+    end_time: Text,
 ):
     back = f"/web/admin/barbers/{barber_id}"
     get_or_404(db, Barber, barber_id, "Мастер не найден")
@@ -307,6 +332,7 @@ def admin_reset_password(user_id: int, db: DbSession, user: WebAdmin, password: 
 
 # --- Админ: услуги ---
 
+
 @router.get("/admin/services", response_class=HTMLResponse)
 def admin_services(request: Request, db: DbSession, user: WebAdmin):
     services = db.scalars(select(Service).order_by(Service.name)).all()
@@ -325,7 +351,9 @@ def admin_create_service(
     db: DbSession, user: WebAdmin, name: Text, price: Text, duration_min: Text
 ):
     try:
-        data = ServiceCreate(name=name.strip(), price=_parse_price(price), duration_min=duration_min)
+        data = ServiceCreate(
+            name=name.strip(), price=_parse_price(price), duration_min=duration_min
+        )
     except ValidationError as exc:
         return redirect("/web/admin/services", error=validation_message(exc))
     db.add(Service(**data.model_dump()))

@@ -18,7 +18,9 @@ CLIENT_TELEGRAM_ID = 222  # из фикстуры shop
 def sent(monkeypatch):
     """Вместо настоящей отправки в Telegram складываем сообщения в список."""
     messages: list[tuple[int, str]] = []
-    monkeypatch.setattr(tasks, "send_message", lambda chat_id, text: messages.append((chat_id, text)))
+    monkeypatch.setattr(
+        tasks, "send_message", lambda chat_id, text: messages.append((chat_id, text))
+    )
     return messages
 
 
@@ -48,6 +50,7 @@ def add_appointment(
 
 
 # --- Напоминания ---
+
 
 def test_due_reminder_is_sent_once(db, shop, sent):
     add_appointment(db, shop, now_local() + timedelta(hours=1))
@@ -103,6 +106,7 @@ def test_permanent_error_is_not_retried(db, shop, sent, monkeypatch):
 
 
 # --- Ежедневный отчёт ---
+
 
 @pytest.fixture
 def busy_day(db, shop):

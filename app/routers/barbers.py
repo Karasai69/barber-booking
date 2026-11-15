@@ -76,7 +76,11 @@ def list_schedules(barber_id: int, db: DbSession):
     return db.scalars(stmt).all()
 
 
-@router.delete("/{barber_id}/schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=ADMIN)
+@router.delete(
+    "/{barber_id}/schedules/{schedule_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=ADMIN,
+)
 def delete_schedule(barber_id: int, schedule_id: int, db: DbSession):
     schedule = db.get(Schedule, schedule_id)
     if schedule is None or schedule.barber_id != barber_id:

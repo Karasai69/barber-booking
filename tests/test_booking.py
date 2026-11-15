@@ -145,9 +145,7 @@ def test_database_rejects_overlap_directly(db, shop):
     db.add(Appointment(**common, start_at=at(shop["day"], 12), end_at=at(shop["day"], 13)))
     db.commit()
 
-    db.add(
-        Appointment(**common, start_at=at(shop["day"], 12, 30), end_at=at(shop["day"], 13, 30))
-    )
+    db.add(Appointment(**common, start_at=at(shop["day"], 12, 30), end_at=at(shop["day"], 13, 30)))
     with pytest.raises(IntegrityError):
         db.commit()
     db.rollback()

@@ -1,0 +1,15 @@
+line-length = 100
+target-version = "py313"
+extend-exclude = ["alembic/versions"]
+
+[lint]
+# E/W — стиль PEP 8, F — ошибки (неиспользуемые импорты, имена), I — порядок импортов,
+# B — частые баги (bugbear), UP — устаревший синтаксис.
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = [
+    "B008",  # Depends()/Form() в аргументах — нормальный стиль FastAPI
+]
+
+[lint.per-file-ignores]
+"tests/conftest.py" = ["E402"]  # переменная окружения задаётся до импорта приложения
+"alembic/env.py" = ["E402"]  # импорты после настройки config — так устроен шаблон Alembic

@@ -66,6 +66,4 @@ def update_status(
     appointment_id: int, data: AppointmentStatusUpdate, db: DbSession, user: CurrentUser
 ):
     """Админ: отмена или отметка визита. Мастер: только «пришёл» / «не пришёл» в своих записях."""
-    return booking.change_status(
-        db, appointment_id, data.status, barber_id=own_barber_id(user)
-    )
+    return booking.change_status(db, appointment_id, data.status, barber_id=own_barber_id(user))

@@ -16,7 +16,7 @@ class Base(DeclarativeBase):
     """Родительский класс для всех моделей."""
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """Зависимость FastAPI: даёт сессию на один запрос и закрывает её."""
     db = SessionLocal()
     try:

@@ -31,9 +31,7 @@ def create_access_token(user_id: int) -> str:
 def decode_access_token(token: str) -> int | None:
     """id пользователя из токена или None, если токен поддельный или истёк."""
     try:
-        payload = jwt.decode(
-            token, settings.JWT_SECRET.get_secret_value(), algorithms=[ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET.get_secret_value(), algorithms=[ALGORITHM])
         return int(payload["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
         return None

@@ -26,9 +26,7 @@ def user_from_token(db: Session, token: str | None) -> User | None:
     return user if user is not None and user.is_active else None
 
 
-def get_current_user(
-    db: DbSession, token: Annotated[str | None, Depends(oauth2_scheme)]
-) -> User:
+def get_current_user(db: DbSession, token: Annotated[str | None, Depends(oauth2_scheme)]) -> User:
     user = user_from_token(db, token)
     if user is None:
         raise HTTPException(

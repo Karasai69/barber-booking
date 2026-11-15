@@ -79,9 +79,7 @@ async def on_service(callback: CallbackQuery, callback_data: ServiceCb) -> None:
     if not barbers:
         await show(callback, "Сейчас нет доступных мастеров.", kbs.home_button())
         return
-    await show(
-        callback, "Выберите мастера:", kbs.barbers_kb(callback_data.service_id, barbers)
-    )
+    await show(callback, "Выберите мастера:", kbs.barbers_kb(callback_data.service_id, barbers))
 
 
 @router.callback_query(BarberCb.filter())
@@ -102,9 +100,7 @@ async def on_barber(callback: CallbackQuery, callback_data: BarberCb) -> None:
 
 
 @router.callback_query(DayCb.filter())
-async def on_day(
-    callback: CallbackQuery, callback_data: DayCb, alert: str | None = None
-) -> None:
+async def on_day(callback: CallbackQuery, callback_data: DayCb, alert: str | None = None) -> None:
     day = date.fromisoformat(callback_data.day)
     slots = await run_db(q.free_slots, callback_data.barber_id, callback_data.service_id, day)
     if not slots:

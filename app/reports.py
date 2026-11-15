@@ -47,9 +47,7 @@ class DailyReport:
 def build_daily_report(db: Session, day: date) -> DailyReport:
     day_start, day_end = day_bounds(day)
     # Выручка — только с тех, кто пришёл.
-    revenue = func.sum(Appointment.price).filter(
-        Appointment.status == AppointmentStatus.COMPLETED
-    )
+    revenue = func.sum(Appointment.price).filter(Appointment.status == AppointmentStatus.COMPLETED)
     rows = db.execute(
         select(Barber.id, Barber.name, Appointment.status, func.count(), revenue)
         .join(Barber, Appointment.barber_id == Barber.id)

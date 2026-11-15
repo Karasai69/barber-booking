@@ -21,14 +21,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
-class AppointmentStatus(str, enum.Enum):
+class AppointmentStatus(enum.StrEnum):
     BOOKED = "booked"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
     NO_SHOW = "no_show"
 
 
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     ADMIN = "admin"
     BARBER = "barber"
 
@@ -121,9 +121,7 @@ class Appointment(Base):
         default=AppointmentStatus.BOOKED,
         server_default=AppointmentStatus.BOOKED.value,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     barber: Mapped["Barber"] = relationship(back_populates="appointments")
     client: Mapped["Client"] = relationship(back_populates="appointments")
@@ -150,8 +148,6 @@ class User(Base):
     )
     barber_id: Mapped[int | None] = mapped_column(ForeignKey("barbers.id"), unique=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     barber: Mapped["Barber | None"] = relationship()
