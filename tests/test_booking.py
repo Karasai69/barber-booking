@@ -118,9 +118,20 @@ def test_status_transitions(client, shop):
     appointment = book(client, shop, at(shop["day"], 12)).json()
     url = f"/appointments/{appointment['id']}/status"
 
-    assert client.patch(url, json={"status": "completed"}).status_code == 200
+    assert client.patch(url, json={"status": "cancelled"}).status_code == 200
     # Итоговый статус больше не меняется.
-    assert client.patch(url, json={"status": "cancelled"}).status_code == 400
+    assert client.patch(url, json={"status": "booked"}).status_code == 400
+    assert client.patch(url, json={"status": "completed"}).status_code == 400
+
+
+def test_visit_cannot_be_marked_before_start(client, shop):
+    appointment = book(client, shop, at(shop["day"], 12)).json()
+    url = f"/appointments/{appointment['id']}/status"
+
+    response = client.patch(url, json={"status": "completed"})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Отметить визит можно только после начала записи"
 
 
 def test_database_rejects_overlap_directly(db, shop):
@@ -142,12 +153,12 @@ def test_database_rejects_overlap_directly(db, shop):
     db.rollback()
 
 
-def test_concurrent_requests_only_one_wins(shop):
+def test_concurrent_requests_only_one_wins(shop, admin_headers):
     """Десять одновременных запросов на одно время: успешен ровно один."""
     start = at(shop["day"], 12)
 
     def attempt(_):
-        with TestClient(app) as c:
+        with TestClient(app, headers=admin_headers) as c:
             return book(c, shop, start).status_code
 
     with ThreadPoolExecutor(max_workers=10) as pool:

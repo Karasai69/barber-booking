@@ -14,7 +14,10 @@ from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine, text  # noqa: E402
 
+from app import accounts  # noqa: E402
 from app.config import settings  # noqa: E402
+from app.models import UserRole  # noqa: E402
+from app.security import create_access_token  # noqa: E402
 from app.database import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -49,14 +52,36 @@ def clean_tables():
     with engine.begin() as conn:
         conn.execute(
             text(
-                "TRUNCATE appointments, schedules, clients, services, barbers "
+                "TRUNCATE users, appointments, schedules, clients, services, barbers "
                 "RESTART IDENTITY CASCADE"
             )
         )
 
 
+ADMIN_PASSWORD = "admin-pass-123"
+BARBER_PASSWORD = "barber-pass-123"
+
+
+def bearer(user_id: int) -> dict[str, str]:
+    return {"Authorization": f"Bearer {create_access_token(user_id)}"}
+
+
 @pytest.fixture
-def client():
+def admin_headers() -> dict[str, str]:
+    with SessionLocal() as session:
+        admin = accounts.create_user(session, "admin", ADMIN_PASSWORD, UserRole.ADMIN)
+        return bearer(admin.id)
+
+
+@pytest.fixture
+def client(admin_headers):
+    """Клиент API, вошедший как админ — большинство тестов действуют от его имени."""
+    with TestClient(app, headers=admin_headers) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def anon_client():
     with TestClient(app) as test_client:
         yield test_client
 
