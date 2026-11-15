@@ -1,11 +1,13 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 
+from app.auth import require_admin
 from app.database import DbSession
 from app.errors import commit_or_conflict, get_or_404
 from app.models import Client
 from app.schemas import ClientCreate, ClientRead
 
-router = APIRouter(prefix="/clients", tags=["clients"])
+# Клиенты сами регистрируются через бота; через API с ними работает только админ.
+router = APIRouter(prefix="/clients", tags=["clients"], dependencies=[Depends(require_admin)])
 
 
 @router.post("", response_model=ClientRead, status_code=status.HTTP_201_CREATED)

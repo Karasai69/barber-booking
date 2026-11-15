@@ -1,10 +1,10 @@
-from datetime import datetime, time
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Annotated
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
-from app.models import AppointmentStatus
+from app.models import AppointmentStatus, UserRole
 
 Name = Annotated[str, Field(min_length=1, max_length=100)]
 TelegramId = Annotated[int, Field(gt=0)]
@@ -117,3 +117,53 @@ class AppointmentRead(ORMModel):
     price: Decimal
     status: AppointmentStatus
     created_at: datetime
+
+
+# --- Вход и пользователи кабинета ---
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserCreate(BaseModel):
+    username: Annotated[str, Field(min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_.-]+$")]
+    password: Annotated[str, Field(min_length=8, max_length=128)]
+    role: UserRole
+    barber_id: int | None = None
+
+
+class UserUpdate(BaseModel):
+    password: Annotated[str, Field(min_length=8, max_length=128)] | None = None
+    is_active: bool | None = None
+
+
+class UserRead(ORMModel):
+    id: int
+    username: str
+    role: UserRole
+    barber_id: int | None
+    is_active: bool
+
+
+# --- Статистика ---
+
+class BarberStatsRead(ORMModel):
+    barber_id: int | None
+    name: str
+    total: int
+    completed: int
+    no_show: int
+    cancelled: int
+    pending: int
+    revenue: Decimal
+    busy_minutes: int
+    work_minutes: int
+    load_percent: int | None
+
+
+class PeriodStatsRead(BaseModel):
+    date_from: date
+    date_to: date
+    barbers: list[BarberStatsRead]
+    total: BarberStatsRead

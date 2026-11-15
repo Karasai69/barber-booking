@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.errors import AppError, ConflictError, NotFoundError, get_or_404
+from app.errors import AppError, ConflictError, ForbiddenError, NotFoundError, get_or_404
 from app.models import Appointment, AppointmentStatus, Barber, Client, Schedule, Service
 
 SLOT_STEP = timedelta(minutes=15)
@@ -141,12 +141,32 @@ def cancel_by_client(db: Session, appointment_id: int, client_id: int) -> Appoin
     return change_status(db, appointment_id, AppointmentStatus.CANCELLED)
 
 
-def change_status(db: Session, appointment_id: int, new_status: AppointmentStatus) -> Appointment:
-    appointment = get_or_404(db, Appointment, appointment_id, "Запись не найдена")
+VISIT_STATUSES = {AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW}
+
+
+def change_status(
+    db: Session,
+    appointment_id: int,
+    new_status: AppointmentStatus,
+    *,
+    barber_id: int | None = None,
+) -> Appointment:
+    """Меняет статус записи.
+
+    barber_id задаётся, когда действует мастер: тогда можно трогать только свои
+    записи и только отмечать визит («пришёл» / «не пришёл»).
+    """
+    appointment = db.get(Appointment, appointment_id)
+    if appointment is None or (barber_id is not None and appointment.barber_id != barber_id):
+        raise NotFoundError("Запись не найдена")
+    if barber_id is not None and new_status not in VISIT_STATUSES:
+        raise ForbiddenError("Мастер может только отметить, пришёл ли клиент")
     if new_status not in ALLOWED_TRANSITIONS.get(appointment.status, set()):
         raise AppError(
             f"Нельзя сменить статус {appointment.status.value} на {new_status.value}"
         )
+    if new_status in VISIT_STATUSES and appointment.start_at > now_local():
+        raise AppError("Отметить визит можно только после начала записи")
     appointment.status = new_status
     db.commit()
     db.refresh(appointment)

@@ -1,9 +1,10 @@
 from datetime import date, datetime
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 
 from app import booking
+from app.auth import require_admin
 from app.database import DbSession
 from app.errors import NotFoundError, commit_or_conflict, get_or_404
 from app.models import Barber, Schedule
@@ -11,11 +12,13 @@ from app.schemas import BarberCreate, BarberRead, BarberUpdate, ScheduleCreate, 
 
 router = APIRouter(prefix="/barbers", tags=["barbers"])
 
+ADMIN = [Depends(require_admin)]
+
 BARBER_NOT_FOUND = "Мастер не найден"
 TELEGRAM_TAKEN = "Мастер с таким telegram_id уже есть"
 
 
-@router.post("", response_model=BarberRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BarberRead, status_code=status.HTTP_201_CREATED, dependencies=ADMIN)
 def create_barber(data: BarberCreate, db: DbSession):
     barber = Barber(**data.model_dump())
     db.add(barber)
@@ -37,7 +40,7 @@ def get_barber(barber_id: int, db: DbSession):
     return get_or_404(db, Barber, barber_id, BARBER_NOT_FOUND)
 
 
-@router.patch("/{barber_id}", response_model=BarberRead)
+@router.patch("/{barber_id}", response_model=BarberRead, dependencies=ADMIN)
 def update_barber(barber_id: int, data: BarberUpdate, db: DbSession):
     barber = get_or_404(db, Barber, barber_id, BARBER_NOT_FOUND)
     for field, value in data.model_dump(exclude_unset=True, exclude_none=True).items():
@@ -48,7 +51,10 @@ def update_barber(barber_id: int, data: BarberUpdate, db: DbSession):
 
 
 @router.post(
-    "/{barber_id}/schedules", response_model=ScheduleRead, status_code=status.HTTP_201_CREATED
+    "/{barber_id}/schedules",
+    response_model=ScheduleRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=ADMIN,
 )
 def add_schedule(barber_id: int, data: ScheduleCreate, db: DbSession):
     get_or_404(db, Barber, barber_id, BARBER_NOT_FOUND)
@@ -70,7 +76,7 @@ def list_schedules(barber_id: int, db: DbSession):
     return db.scalars(stmt).all()
 
 
-@router.delete("/{barber_id}/schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{barber_id}/schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=ADMIN)
 def delete_schedule(barber_id: int, schedule_id: int, db: DbSession):
     schedule = db.get(Schedule, schedule_id)
     if schedule is None or schedule.barber_id != barber_id:
