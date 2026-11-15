@@ -78,5 +78,19 @@ tr.cancelled td, tr.inactive td { color: var(--muted); }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 4px; }
 .tile strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 
+/* На телефоне строки расписания превращаются в карточки: таблица не влезает по ширине,
+   а кнопки отметки визита должны быть видны без горизонтальной прокрутки. */
+@media (max-width: 640px) {
+  table.cards thead { display: none; }
+  table.cards, table.cards tbody, table.cards tr, table.cards td { display: block; width: 100%; }
+  table.cards tr { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  table.cards tr:last-child { border-bottom: none; }
+  table.cards td { border: none; padding: 2px 0; }
+  table.cards td:first-child { font-weight: 700; font-size: 1.05rem; }
+  table.cards td.actions { padding-top: 10px; white-space: normal; }
+  table.cards td.actions button { flex: 1; }
+  table.cards .actions form { display: flex; width: 100%; }
+}
+
 .bar { display: inline-block; width: 60px; height: 6px; background: var(--line); border-radius: 3px; vertical-align: middle; margin-right: 6px; overflow: hidden; }
 .bar span { display: block; height: 100%; background: var(--accent); }
