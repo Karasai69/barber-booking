@@ -13,7 +13,9 @@ from sqlalchemy import (
     String,
     Time,
     func,
+    text,
 )
+from sqlalchemy.dialects.postgresql import ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -84,6 +86,15 @@ class Appointment(Base):
     __tablename__ = "appointments"
     __table_args__ = (
         CheckConstraint("end_at > start_at", name="ck_appointments_end_after_start"),
+        # Защита от двойной записи: у одного мастера не может быть двух активных
+        # записей с пересекающимся временем. Проверяет сама PostgreSQL.
+        ExcludeConstraint(
+            ("barber_id", "="),
+            (text("tstzrange(start_at, end_at, '[)')"), "&&"),
+            name="ex_appointments_no_overlap",
+            using="gist",
+            where=text("status = 'booked'"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

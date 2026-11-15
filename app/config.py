@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
 
+    # Часовой пояс барбершопа: в нём записан график мастеров.
+    TIMEZONE: str = "Asia/Almaty"
+
     @property
     def database_url(self) -> str:
         return (
