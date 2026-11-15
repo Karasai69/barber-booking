@@ -21,6 +21,12 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Ключ подписи JWT. Обязателен: без него нельзя ни выдать, ни проверить токен.
+    JWT_SECRET: SecretStr
+    ACCESS_TOKEN_MINUTES: int = 12 * 60
+    # True на сервере с HTTPS: cookie со входом не уйдёт по обычному http.
+    COOKIE_SECURE: bool = False
+
     @property
     def database_url(self) -> str:
         return (

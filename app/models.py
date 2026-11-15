@@ -28,6 +28,11 @@ class AppointmentStatus(str, enum.Enum):
     NO_SHOW = "no_show"
 
 
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    BARBER = "barber"
+
+
 class Barber(Base):
     __tablename__ = "barbers"
 
@@ -123,3 +128,30 @@ class Appointment(Base):
     barber: Mapped["Barber"] = relationship(back_populates="appointments")
     client: Mapped["Client"] = relationship(back_populates="appointments")
     service: Mapped["Service"] = relationship(back_populates="appointments")
+
+
+class User(Base):
+    """Аккаунт веб-кабинета. Клиенты сюда не входят — они работают через бота."""
+
+    __tablename__ = "users"
+    __table_args__ = (
+        # У мастера аккаунт обязательно привязан к barbers, у админа — нет.
+        CheckConstraint(
+            "(role = 'admin' AND barber_id IS NULL) OR (role = 'barber' AND barber_id IS NOT NULL)",
+            name="ck_users_role_barber",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, name="user_role", values_callable=lambda e: [m.value for m in e])
+    )
+    barber_id: Mapped[int | None] = mapped_column(ForeignKey("barbers.id"), unique=True)
+    is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    barber: Mapped["Barber | None"] = relationship()
