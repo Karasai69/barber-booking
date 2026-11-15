@@ -12,6 +12,25 @@
 | Мастер | веб-кабинет | видеть своё расписание по дням, отмечать «пришёл» / «не пришёл» |
 | Админ | веб-кабинет и API | мастера, их график и аккаунты, услуги и цены; загрузка и выручка за период; ежедневный отчёт в Telegram |
 
+## Скриншоты
+
+**Админ: загрузка и выручка по мастерам**
+
+![Статистика](docs/screenshots/admin-stats.png)
+
+**Админ: расписание мастера на день** — идущую запись можно отметить, будущую отменить
+
+![Расписание](docs/screenshots/admin-schedule.png)
+
+<table>
+  <tr>
+    <td width="32%" valign="top"><b>Мастер с телефона</b><br><br><img src="docs/screenshots/barber-schedule-mobile.png" alt="Кабинет мастера на телефоне"></td>
+    <td valign="top"><b>Админ: график и аккаунт мастера</b><br><br><img src="docs/screenshots/admin-barber.png" alt="График мастера"></td>
+  </tr>
+</table>
+
+<sub>Данные на скриншотах — сгенерированные демо-данные.</sub>
+
 ## Стек
 
 FastAPI · SQLAlchemy 2.0 · Alembic · PostgreSQL 17 · Redis · Celery (worker + beat) · aiogram 3 · Jinja2 · JWT (PyJWT) + Argon2 · pytest · Ruff · Docker Compose · GitHub Actions
