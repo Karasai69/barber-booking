@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Вход в кабинет</h1>
+  <form method="post" action="/web/login" class="stack">
+    <label>Логин <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>
+    <label>Пароль <input name="password" type="password" autocomplete="current-password" required></label>
+    <button>Войти</button>
+  </form>
+</section>
+{% endblock %}

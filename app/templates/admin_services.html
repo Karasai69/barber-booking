@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Услуги{% endblock %}
+{% block content %}
+<h1>Услуги</h1>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Название</th><th>Цена, ₸</th><th>Длительность, мин</th><th></th></tr></thead>
+  <tbody>
+  {% for s in services %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td colspan="3">
+        <form method="post" action="/web/admin/services/{{ s.id }}" class="row tight">
+          <input name="price" value="{{ '%.0f' % s.price }}" inputmode="decimal" required aria-label="Цена">
+          <input name="duration_min" type="number" min="1" max="600" value="{{ s.duration_min }}" required aria-label="Длительность">
+          <button class="ghost">Сохранить</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="empty">Услуг пока нет.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted small">Новая цена действует для новых записей. В уже созданных записях остаётся цена на момент записи.</p>
+
+<section class="card">
+  <h2>Добавить услугу</h2>
+  <form method="post" action="/web/admin/services" class="row">
+    <label>Название <input name="name" required maxlength="100"></label>
+    <label>Цена, ₸ <input name="price" inputmode="decimal" required></label>
+    <label>Длительность, мин <input name="duration_min" type="number" min="1" max="600" value="60" required></label>
+    <button>Добавить</button>
+  </form>
+</section>
+{% endblock %}

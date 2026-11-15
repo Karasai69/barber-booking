@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Барбершоп{% endblock %} — кабинет</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  {% if user %}
+  <header class="topbar">
+    <a class="brand" href="/web">✂️ Барбершоп</a>
+    <nav>
+      <a href="/web/schedule">Расписание</a>
+      {% if user.role.value == "admin" %}
+        <a href="/web/admin">Статистика</a>
+        <a href="/web/admin/barbers">Мастера</a>
+        <a href="/web/admin/services">Услуги</a>
+      {% endif %}
+    </nav>
+    <form method="post" action="/web/logout" class="logout">
+      <span class="muted">{{ user.username }}</span>
+      <button class="link">Выйти</button>
+    </form>
+  </header>
+  {% endif %}
+  <main>
+    {% if msg %}<p class="flash ok">{{ msg }}</p>{% endif %}
+    {% if error %}<p class="flash err">{{ error }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

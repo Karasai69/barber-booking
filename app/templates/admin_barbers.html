@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Мастера{% endblock %}
+{% block content %}
+<h1>Мастера</h1>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Имя</th><th>Аккаунт</th><th>Статус</th><th></th></tr></thead>
+  <tbody>
+  {% for b in barbers %}
+    <tr {% if not b.is_active %}class="inactive"{% endif %}>
+      <td><a href="/web/admin/barbers/{{ b.id }}">{{ b.name }}</a></td>
+      <td>{% if accounts.get(b.id) %}{{ accounts[b.id].username }}{% else %}<span class="muted">нет</span>{% endif %}</td>
+      <td>{{ "работает" if b.is_active else "не принимает записи" }}</td>
+      <td class="actions">
+        <a class="btn ghost" href="/web/admin/barbers/{{ b.id }}">График</a>
+        <form method="post" action="/web/admin/barbers/{{ b.id }}/toggle">
+          <button class="ghost {% if b.is_active %}danger{% endif %}">{{ "Отключить" if b.is_active else "Включить" }}</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="empty">Мастеров пока нет.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<section class="card">
+  <h2>Добавить мастера</h2>
+  <form method="post" action="/web/admin/barbers" class="row">
+    <label>Имя <input name="name" required maxlength="100"></label>
+    <label>Telegram id <input name="telegram_id" inputmode="numeric" placeholder="необязательно"></label>
+    <button>Добавить</button>
+  </form>
+</section>
+{% endblock %}
