@@ -114,6 +114,7 @@ def create_appointment(
         service_id=service_id,
         start_at=start_at,
         end_at=end_at,
+        price=service.price,
     )
     db.add(appointment)
     try:

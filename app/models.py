@@ -103,6 +103,10 @@ class Appointment(Base):
     service_id: Mapped[int] = mapped_column(ForeignKey("services.id"))
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Цена на момент записи: если услугу потом подорожают, старая выручка не изменится.
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Когда отправили напоминание. NULL — ещё не отправляли.
+    reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[AppointmentStatus] = mapped_column(
         Enum(
             AppointmentStatus,

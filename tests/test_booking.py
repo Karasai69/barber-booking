@@ -129,6 +129,7 @@ def test_database_rejects_overlap_directly(db, shop):
         "barber_id": shop["barber_id"],
         "client_id": shop["client_id"],
         "service_id": shop["service_id"],
+        "price": 5000,
     }
     db.add(Appointment(**common, start_at=at(shop["day"], 12), end_at=at(shop["day"], 13)))
     db.commit()

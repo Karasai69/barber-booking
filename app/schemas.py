@@ -114,5 +114,6 @@ class AppointmentRead(ORMModel):
     service_id: int
     start_at: datetime
     end_at: datetime
+    price: Decimal
     status: AppointmentStatus
     created_at: datetime
