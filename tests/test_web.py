@@ -93,8 +93,25 @@ def test_barber_schedule_shows_only_own(barber_browser, client, db, shop):
 
     page = barber_browser.get("/web/schedule", params={"day": start.date()})
 
-    assert page.text.count("Данияр") == 1  # только своя запись
+    assert page.text.count("data-appointment=") == 1  # только своя запись
+    assert 'class="timeline"' in page.text
     assert "Пришёл" in page.text
+
+
+def test_admin_sees_one_barber_timeline_or_all_barbers_list(admin_browser, client, db, shop):
+    other = client.post("/barbers", json={"name": "Ерлан"}).json()["id"]
+    start = now_local() + timedelta(minutes=30)
+    add_appointment(db, shop, start)
+    add_appointment(db, shop, start, barber_id=other)
+    day = start.date()
+
+    one = admin_browser.get("/web/schedule", params={"day": day, "barber_id": other})
+    everyone = admin_browser.get("/web/schedule", params={"day": day, "barber_id": "all"})
+
+    assert one.text.count("data-appointment=") == 1
+    assert 'class="timeline"' in one.text
+    assert everyone.text.count("data-appointment=") == 2
+    assert 'class="timeline"' not in everyone.text
 
 
 def test_barber_marks_visit_from_page(barber_browser, db, shop):

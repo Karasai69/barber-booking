@@ -1,56 +1,142 @@
 {% extends "base.html" %}
 {% block title %}Расписание{% endblock %}
+
 {% block content %}
-<div class="toolbar">
-  <h1>{{ WEEKDAYS[day.weekday()] }}, {{ day.strftime("%d.%m.%Y") }}</h1>
-  <form method="get" action="/web/schedule" class="inline">
-    <a class="btn ghost" href="?day={{ prev_day }}{% if barbers and barber_id %}&barber_id={{ barber_id }}{% endif %}">←</a>
-    <input type="date" name="day" value="{{ day }}" onchange="this.form.submit()">
-    <a class="btn ghost" href="?day={{ next_day }}{% if barbers and barber_id %}&barber_id={{ barber_id }}{% endif %}">→</a>
-    {% if day != today %}<a class="btn ghost" href="?day={{ today }}{% if barbers and barber_id %}&barber_id={{ barber_id }}{% endif %}">Сегодня</a>{% endif %}
+{% set link = "&barber_id=" ~ barber_param if barber_param else "" %}
+<div class="day-head">
+  <div>
+    <p class="eyebrow">{{ WEEKDAYS_FULL[day.weekday()] }}{% if barber_name %} · мастер {{ barber_name }}{% elif barbers %} · все мастера{% endif %}</p>
+    <h1 class="day-title">{{ day.day }} {{ MONTHS_GENITIVE[day.month - 1] }}</h1>
+  </div>
+  <form method="get" action="/web/schedule" class="day-nav">
+    <a class="round" href="?day={{ prev_day }}{{ link }}" aria-label="Предыдущий день">‹</a>
+    <input type="date" name="day" value="{{ day }}" aria-label="Дата" onchange="this.form.submit()">
+    <a class="round" href="?day={{ next_day }}{{ link }}" aria-label="Следующий день">›</a>
+    {% if day != today %}<a class="btn ghost" href="?day={{ today }}{{ link }}">Сегодня</a>{% endif %}
     {% if barbers %}
-      <select name="barber_id" onchange="this.form.submit()">
-        <option value="">Все мастера</option>
-        {% for b in barbers %}
-          <option value="{{ b.id }}" {% if b.id == barber_id %}selected{% endif %}>{{ b.name }}</option>
-        {% endfor %}
-      </select>
+      <label class="pill-select">Мастер
+        <select name="barber_id" onchange="this.form.submit()">
+          {% for b in barbers %}
+            <option value="{{ b.id }}" {% if b.id == barber_id %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+          <option value="all" {% if not single_barber %}selected{% endif %}>Все мастера</option>
+        </select>
+      </label>
     {% endif %}
   </form>
 </div>
 
-{% if not rows %}
+{% if timeline %}
+{# Один мастер: день на шкале времени. Цвета столба — статусы:
+   белый — прошло, красный — сейчас, синий — впереди. #}
+<div class="day-grid">
+  <aside class="day-side">
+    {% for b in summary.attention %}
+      <section class="now-card">
+        <span class="eyebrow">
+          {% if b.kind == "now" %}Сейчас в кресле · до {{ b.appt.end_at|hm }}
+          {% else %}Визит не отмечен · {{ b.appt.start_at|hm }}–{{ b.appt.end_at|hm }}{% endif %}
+        </span>
+        <strong class="now-name">{{ b.appt.client_name }}</strong>
+        <span>{{ b.appt.service_name }} · {{ b.appt.price|money }}</span>
+        {% if b.appt.client_phone %}<a href="tel:{{ b.appt.client_phone|replace(' ', '') }}">{{ b.appt.client_phone }}</a>{% endif %}
+        <form method="post" action="/web/appointments/{{ b.appt.id }}/status" class="now-actions">
+          <input type="hidden" name="day" value="{{ day }}">
+          <input type="hidden" name="barber_id" value="{{ barber_param }}">
+          <button name="status" value="completed" class="on-red">Пришёл</button>
+          <button name="status" value="no_show" class="on-red ghost">Не пришёл</button>
+        </form>
+      </section>
+    {% else %}
+      <section class="free-card">
+        {% if summary.next_up %}
+          Отмечать пока некого. Следующий — {{ summary.next_up.appt.client_name }} в {{ summary.next_up.appt.start_at|hm }}.
+        {% else %}
+          Отмечать некого: неотмеченных и будущих записей нет.
+        {% endif %}
+      </section>
+    {% endfor %}
+
+    <dl class="day-summary">
+      <div><dt>Прошли</dt><dd>{{ summary.done }}</dd></div>
+      <div><dt>Впереди</dt><dd>{{ summary.upcoming }}</dd></div>
+      <div><dt>В кассе</dt><dd>{{ summary.revenue|money }}</dd></div>
+    </dl>
+
+    <ul class="legend" aria-label="Что значат цвета">
+      <li><span class="swatch done"></span>белый — уже прошло</li>
+      <li><span class="swatch now"></span>красный — сейчас в кресле</li>
+      <li><span class="swatch upcoming"></span>синий — ещё впереди</li>
+    </ul>
+  </aside>
+
+  <section class="timeline" aria-label="День по часам" style="--tl-height: {{ timeline.height }}px">
+    <div class="tl-hours" aria-hidden="true">
+      {% for h in timeline.hours %}{% if not h.hidden %}<span style="--top: {{ h.top }}px">{{ h.label }}</span>{% endif %}{% endfor %}
+      {% if timeline.now_top is not none %}<span class="tl-now" style="--top: {{ timeline.now_top }}px">{{ timeline.now_label }}</span>{% endif %}
+    </div>
+    <div class="tl-pole" aria-hidden="true">
+      <span class="tl-ball"></span><span class="tl-cap"></span><span class="tl-body pole"></span><span class="tl-cap"></span>
+    </div>
+    <div class="tl-lane">
+      {% for z in timeline.off %}
+        <div class="tl-off" style="--top: {{ z.top }}px; --h: {{ z.height }}px">не работает</div>
+      {% endfor %}
+      {% for b in timeline.blocks %}
+        <article class="tl-block {{ b.kind }}" data-appointment="{{ b.appt.id }}"
+                 style="--top: {{ b.top }}px; --h: {{ b.height }}px; --left: {{ b.left }}%; --w: {{ b.width }}%">
+          <strong class="tl-time">{{ b.appt.start_at|hm }}–{{ b.appt.end_at|hm }}</strong>
+          <span class="tl-name">{{ b.appt.client_name }}</span>
+          <span class="tl-meta">{{ b.appt.service_name }} · {{ b.appt.price|money }}{% if b.appt.client_phone %} · <a href="tel:{{ b.appt.client_phone|replace(' ', '') }}">{{ b.appt.client_phone }}</a>{% endif %}</span>
+          {% if b.label %}<span class="tl-status">{{ b.label }}</span>{% endif %}
+          {% if b.kind == "upcoming" and user.role.value == "admin" %}
+            <form method="post" action="/web/appointments/{{ b.appt.id }}/status"
+                  data-confirm="Отменить запись: {{ b.appt.client_name }}, {{ b.appt.start_at|hm }}?"
+                  onsubmit="return confirm(this.dataset.confirm)">
+              <input type="hidden" name="day" value="{{ day }}">
+              <input type="hidden" name="barber_id" value="{{ barber_param }}">
+              <button name="status" value="cancelled" class="tl-cancel">Отменить</button>
+            </form>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% elif single_barber %}
+  <p class="empty">В этот день у мастера нет ни смен, ни записей.</p>
+
+{% elif not rows %}
   <p class="empty">Записей нет.</p>
+
 {% else %}
+{# Все мастера сразу: общий список по времени. #}
 <div class="table-wrap">
 <table class="cards">
   <thead>
-    <tr>
-      <th>Время</th><th>Клиент</th><th>Услуга</th>
-      {% if barbers %}<th>Мастер</th>{% endif %}
-      <th>Статус</th><th></th>
-    </tr>
+    <tr><th>Время</th><th>Клиент</th><th>Услуга</th><th>Мастер</th><th>Статус</th><th></th></tr>
   </thead>
   <tbody>
   {% for a in rows %}
-    <tr class="{{ a.status.value }}">
+    <tr class="{{ a.status.value }}" data-appointment="{{ a.id }}">
       <td class="nowrap">{{ a.start_at|hm }}–{{ a.end_at|hm }}</td>
-      <td>{{ a.client_name }}{% if a.client_phone %}<br><span class="muted">{{ a.client_phone }}</span>{% endif %}</td>
+      <td>{{ a.client_name }}{% if a.client_phone %}<br><a class="muted" href="tel:{{ a.client_phone|replace(' ', '') }}">{{ a.client_phone }}</a>{% endif %}</td>
       <td>{{ a.service_name }}<br><span class="muted">{{ a.price|money }}</span></td>
-      {% if barbers %}<td>{{ a.barber_name }}</td>{% endif %}
-      <td><span class="badge {{ a.status.value }}">{{ STATUS_LABELS[a.status] }}</span></td>
+      <td>{{ a.barber_name }}</td>
+      <td><span class="badge {{ a.status.value }}{% if a.status == Status.BOOKED and a.started %} started{% endif %}">{{ STATUS_LABELS[a.status] }}</span></td>
       <td class="actions">
         {% if a.status == Status.BOOKED %}
-          <form method="post" action="/web/appointments/{{ a.id }}/status">
+          <form method="post" action="/web/appointments/{{ a.id }}/status"
+                {% if not a.started %}data-confirm="Отменить запись: {{ a.client_name }}, {{ a.start_at|hm }}?"
+                onsubmit="return confirm(this.dataset.confirm)"{% endif %}>
             <input type="hidden" name="day" value="{{ day }}">
-            <input type="hidden" name="barber_id" value="{{ barber_id if barbers and barber_id else '' }}">
+            <input type="hidden" name="barber_id" value="{{ barber_param }}">
             {% if a.started %}
               <button name="status" value="completed">Пришёл</button>
               <button name="status" value="no_show" class="ghost">Не пришёл</button>
-            {% elif user.role.value == "admin" %}
-              <button name="status" value="cancelled" class="ghost danger">Отменить</button>
             {% else %}
-              <span class="muted">ещё не начался</span>
+              <button name="status" value="cancelled" class="ghost danger">Отменить</button>
             {% endif %}
           </form>
         {% endif %}

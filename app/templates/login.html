@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Вход{% endblock %}
 {% block content %}
-<section class="card narrow">
+<section class="card narrow login">
+  <img src="/static/icon.svg" width="64" height="64" alt="">
+  <p class="eyebrow">Barber Booking</p>
   <h1>Вход в кабинет</h1>
   <form method="post" action="/web/login" class="stack">
     <label>Логин <input name="username" value="{{ username or '' }}" autocomplete="username" required autofocus></label>

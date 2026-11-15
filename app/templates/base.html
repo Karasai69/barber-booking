@@ -3,19 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Барбершоп{% endblock %} — кабинет</title>
+  <title>{% block title %}Кабинет{% endblock %} — Barber Booking</title>
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Prata&display=swap">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   {% if user %}
+  {% set path = request.url.path %}
   <header class="topbar">
-    <a class="brand" href="/web">✂️ Барбершоп</a>
-    <nav>
-      <a href="/web/schedule">Расписание</a>
+    <a class="brand" href="/web">
+      <img src="/static/icon.svg" width="40" height="40" alt="">
+      <span>Barber Booking</span>
+    </a>
+    <nav aria-label="Разделы">
+      <a href="/web/schedule" {% if path == "/web/schedule" %}aria-current="page"{% endif %}>Расписание</a>
       {% if user.role.value == "admin" %}
-        <a href="/web/admin">Статистика</a>
-        <a href="/web/admin/barbers">Мастера</a>
-        <a href="/web/admin/services">Услуги</a>
+        <a href="/web/admin" {% if path == "/web/admin" %}aria-current="page"{% endif %}>Статистика</a>
+        <a href="/web/admin/barbers" {% if path.startswith("/web/admin/barbers") %}aria-current="page"{% endif %}>Мастера</a>
+        <a href="/web/admin/services" {% if path.startswith("/web/admin/services") %}aria-current="page"{% endif %}>Услуги</a>
       {% endif %}
     </nav>
     <form method="post" action="/web/logout" class="logout">
