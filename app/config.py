@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,9 @@ class Settings(BaseSettings):
 
     # Часовой пояс барбершопа: в нём записан график мастеров.
     TIMEZONE: str = "Asia/Almaty"
+
+    # Нужен только боту. API и тесты работают и без него.
+    TELEGRAM_BOT_TOKEN: SecretStr | None = None
 
     @property
     def database_url(self) -> str:

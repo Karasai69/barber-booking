@@ -24,17 +24,17 @@ ALLOWED_TRANSITIONS = {
 }
 
 
-def _tz() -> ZoneInfo:
+def shop_tz() -> ZoneInfo:
     return ZoneInfo(settings.TIMEZONE)
 
 
-def _now() -> datetime:
-    return datetime.now(_tz())
+def now_local() -> datetime:
+    return datetime.now(shop_tz())
 
 
 def day_bounds(day: date) -> tuple[datetime, datetime]:
     """Начало и конец дня в часовом поясе барбершопа."""
-    start = datetime.combine(day, time.min, tzinfo=_tz())
+    start = datetime.combine(day, time.min, tzinfo=shop_tz())
     return start, start + timedelta(days=1)
 
 
@@ -47,8 +47,8 @@ def _get_active_barber(db: Session, barber_id: int) -> Barber:
 
 def _fits_schedule(db: Session, barber_id: int, start: datetime, end: datetime) -> bool:
     """Попадает ли интервал целиком в одну смену мастера."""
-    local_start = start.astimezone(_tz())
-    local_end = end.astimezone(_tz())
+    local_start = start.astimezone(shop_tz())
+    local_end = end.astimezone(shop_tz())
     if local_start.date() != local_end.date():
         return False
     stmt = select(Schedule.id).where(
@@ -81,11 +81,11 @@ def get_free_slots(db: Session, barber_id: int, service_id: int, day: date) -> l
         )
     ).all()
 
-    now = _now()
+    now = now_local()
     slots: set[datetime] = set()
     for shift in shifts:
-        slot_start = datetime.combine(day, shift.start_time, tzinfo=_tz())
-        shift_end = datetime.combine(day, shift.end_time, tzinfo=_tz())
+        slot_start = datetime.combine(day, shift.start_time, tzinfo=shop_tz())
+        shift_end = datetime.combine(day, shift.end_time, tzinfo=shop_tz())
         while slot_start + duration <= shift_end:
             slot_end = slot_start + duration
             is_free = all(slot_end <= b_start or slot_start >= b_end for b_start, b_end in busy)
@@ -102,7 +102,7 @@ def create_appointment(
     get_or_404(db, Client, client_id, "Клиент не найден")
     service = get_or_404(db, Service, service_id, "Услуга не найдена")
 
-    if start_at <= _now():
+    if start_at <= now_local():
         raise AppError("Нельзя записаться на прошедшее время")
     end_at = start_at + timedelta(minutes=service.duration_min)
     if not _fits_schedule(db, barber_id, start_at, end_at):
@@ -127,6 +127,17 @@ def create_appointment(
         raise
     db.refresh(appointment)
     return appointment
+
+
+def cancel_by_client(db: Session, appointment_id: int, client_id: int) -> Appointment:
+    """Клиент отменяет свою будущую запись."""
+    appointment = db.get(Appointment, appointment_id)
+    # Чужая запись выглядит как несуществующая: не раскрываем, что такой id есть.
+    if appointment is None or appointment.client_id != client_id:
+        raise NotFoundError("Запись не найдена")
+    if appointment.start_at <= now_local():
+        raise AppError("Эта запись уже прошла, отменить её нельзя")
+    return change_status(db, appointment_id, AppointmentStatus.CANCELLED)
 
 
 def change_status(db: Session, appointment_id: int, new_status: AppointmentStatus) -> Appointment:
