@@ -207,3 +207,4 @@ button.on-red.ghost { background: transparent; color: #fff; }
   table.cards td.actions button { flex: 1; }
   table.cards .actions form { display: flex; width: 100%; }
 }
+.card td { vertical-align: middle; }  /* строки графика: текст на одной линии с кнопкой */

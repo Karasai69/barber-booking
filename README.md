@@ -1,8 +1,23 @@
+<div align="center">
+
+<img src="app/static/icon.svg" width="72" alt="">
+
 # Barber Booking
 
-Онлайн-запись в барбершоп: клиент записывается через Telegram-бота, мастер отмечает визиты в веб-кабинете, админ управляет мастерами и услугами и смотрит загрузку и выручку.
+**Онлайн-запись в барбершоп.** Клиент записывается через Telegram-бота, мастер отмечает визиты в веб-кабинете, админ видит загрузку и выручку. Две записи на одно время база данных не пропустит.
 
-![CI](https://github.com/Karasai69/barber-booking/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/Karasai69/barber-booking/actions/workflows/ci.yml/badge.svg)](https://github.com/Karasai69/barber-booking/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.13-1c2340)
+![FastAPI](https://img.shields.io/badge/FastAPI-Jinja2-1c2340)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-1c2340)
+![Celery](https://img.shields.io/badge/Celery-Redis-c8202f)
+![aiogram](https://img.shields.io/badge/aiogram-3-1b3d8f)
+
+<img src="docs/screenshots/admin-schedule.png" alt="Расписание мастера на шкале времени у барбер-пола" width="860">
+
+<sub>День мастера у барбер-пола: белый — визит прошёл, красный — клиент сейчас в кресле, синий — запись впереди.</sub>
+
+</div>
 
 ## Возможности
 
@@ -17,10 +32,6 @@
 **Админ: загрузка и выручка по мастерам**
 
 ![Статистика](docs/screenshots/admin-stats.png)
-
-**Расписание мастера на день** — шкала времени у барбер-пола: белый — прошло, красный — сейчас в кресле, синий — впереди
-
-![Расписание](docs/screenshots/admin-schedule.png)
 
 <table>
   <tr>
@@ -70,6 +81,7 @@ flowchart LR
 - **Защита от двойной записи на уровне БД.** Ограничение `EXCLUDE USING gist (barber_id WITH =, tstzrange(start_at, end_at) WITH &&) WHERE status = 'booked'`: PostgreSQL сама не даст записать к мастеру две пересекающиеся записи, даже если запросы придут одновременно. Тест отправляет 10 параллельных запросов на одно время, успешен ровно один (`tests/test_booking.py`).
 - **Напоминания без дублей.** Задача помечает записи одним `UPDATE ... WHERE reminder_sent_at IS NULL RETURNING`, поэтому два одновременных запуска не отправят одно напоминание дважды. Временная ошибка Telegram приводит к повтору, «бот заблокирован» — нет.
 - **Роли и права.** JWT для API, тот же JWT в `HttpOnly` + `SameSite=Lax` cookie для веб-кабинета. Ограничения мастера (только свои записи, только отметка визита) проверяются в бизнес-логике, а не только в роутере.
+- **Шкала дня считается на сервере, а не в шаблоне.** `app/timeline.py` переводит время записей в отступы и высоты, ставит рядом записи, которые пересекаются на экране, и отмечает нерабочие часы. Модуль не знает ни про базу, ни про HTML, поэтому покрыт обычными тестами (`tests/test_timeline.py`).
 - **Цена хранится в записи.** Если услуга подорожает, выручка за прошлые периоды не изменится.
 
 Все решения с альтернативами описаны в [DECISIONS.md](DECISIONS.md).
@@ -122,13 +134,19 @@ app/
   booking.py       запись, свободные слоты, статусы, правила
   reminders.py     выбор записей для напоминаний
   stats.py         расписание на день, загрузка и выручка
+  timeline.py      раскладка дня мастера на шкале времени
   reports.py       ежедневный отчёт
   tasks.py         задачи Celery
   auth.py          проверка JWT и ролей
   routers/         эндпоинты API
   web.py           веб-кабинет (Jinja2)
+  templates/, static/   страницы кабинета, стили, иконка
 bot/               Telegram-бот (aiogram)
 alembic/           миграции
 scripts/           создание админа, демо-данные
 tests/             pytest
 ```
+
+## Автор
+
+Студент 4 курса КазНУ, «Компьютерная инженерия» — [github.com/Karasai69](https://github.com/Karasai69). Первый проект — [AI Finance Tracker](https://github.com/Karasai69/ai-finance-tracker).

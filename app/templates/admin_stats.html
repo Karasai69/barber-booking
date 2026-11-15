@@ -25,7 +25,7 @@
     <tr>
       <th>Мастер</th><th class="num">Записей</th><th class="num">Пришли</th>
       <th class="num">Не пришли</th><th class="num">Отменили</th><th class="num">Без отметки</th>
-      <th class="num">Занято / по графику, ч</th><th class="num">Загрузка</th><th class="num">Выручка</th>
+      <th class="num">Занято / по графику</th><th class="num">Загрузка</th><th class="num">Выручка</th>
     </tr>
   </thead>
   <tbody>
@@ -37,7 +37,7 @@
       <td class="num">{{ r.no_show }}</td>
       <td class="num">{{ r.cancelled }}</td>
       <td class="num">{{ r.pending }}</td>
-      <td class="num">{{ (r.busy_minutes / 60)|round(1) }} / {{ (r.work_minutes / 60)|round(1) }}</td>
+      <td class="num nowrap">{{ "%g"|format((r.busy_minutes / 60)|round(1)) }} / {{ "%g"|format((r.work_minutes / 60)|round(1)) }} ч</td>
       <td class="num">
         {% if r.load_percent is not none %}
           <span class="bar"><span style="width: {{ [r.load_percent, 100]|min }}%"></span></span>
